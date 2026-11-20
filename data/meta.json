@@ -1,10 +1,10 @@
 {
   "app": "Chinese with AI",
-  "version": "v1.0",
+  "version": "v1.1",
   "sources": [
     {
       "name": "Unicode Unihan",
-      "fields": "Mandarin readings, traditional/simplified variants",
+      "fields": "Mandarin readings, traditional/simplified variants, kHangul (Korean 음)",
       "license": "Unicode Terms of Use",
       "url": "https://www.unicode.org/license.txt"
     },
@@ -21,11 +21,35 @@
       "url": "https://www.mdbg.net/chinese/dictionary?page=cc-cedict",
       "date": "2026-11-06T08:10:12Z",
       "note": "https://creativecommons.org/licenses/by-sa/4.0/"
+    },
+    {
+      "name": "libhangul hanja.txt (via 중국 이름 배우기)",
+      "fields": "Korean 훈 (훈음 data already used in the Korean edition)",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/libhangul/libhangul",
+      "note": "Used only when Korean reading is turned on in Settings."
     }
   ],
   "stats": {
     "unique_chars": 44355,
     "cedict_entries": 125369,
-    "cedict_date": "2026-11-06T08:10:12Z"
+    "cedict_date": "2026-11-06T08:10:12Z",
+    "ko_readings": {
+      "entries": 10636,
+      "common_use": {
+        "both": 4651,
+        "eum_only": 59,
+        "hun_only": 0,
+        "none": 261,
+        "total": 4971
+      },
+      "dictionary_keys": {
+        "both": 9478,
+        "eum_only": 1158,
+        "hun_only": 0,
+        "none": 33719,
+        "total": 44355
+      }
+    }
   }
 }

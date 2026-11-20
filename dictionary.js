@@ -12,6 +12,8 @@
   let maxLen = 8;
   let loadPromise = null;
   let wordsPromise = null;
+  let koReadings = null;
+  let koPromise = null;
   let detailGen = 0;
 
   const TONE_MARK = {
@@ -102,6 +104,66 @@
       throw err;
     });
     return wordsPromise;
+  }
+
+
+  async function ensureKoReadings() {
+    if (koReadings) return koReadings;
+    if (koPromise) return koPromise;
+    koPromise = (async () => {
+      if (window.__KOREAD__) {
+        const data = window.__KOREAD__;
+        koReadings = (data && data.r) ? data.r : data;
+        return koReadings;
+      }
+      try {
+        const data = await fetchGz("data/ko-readings.json.gz");
+        koReadings = (data && data.r) ? data.r : data;
+        return koReadings;
+      } catch (err) { console.warn("ko-readings.json.gz", err); }
+      const data = await fetchJson("data/ko-readings.json");
+      koReadings = (data && data.r) ? data.r : data;
+      return koReadings;
+    })().catch((err) => { koPromise = null; throw err; });
+    return koPromise;
+  }
+
+  function koreanWanted() {
+    try {
+      if (window.askApp && window.askApp.loadPrefs) return !!window.askApp.loadPrefs().koreanReading;
+      const raw = localStorage.getItem("chinese-ai-en.prefs.v1");
+      return !!(raw && JSON.parse(raw).koreanReading);
+    } catch (err) { return false; }
+  }
+
+  function formatHunum(rec) {
+    if (!rec) return "";
+    const huns = rec.h || [];
+    const eums = rec.e || [];
+    if (huns.length && eums.length) {
+      const parts = huns.map((h) => {
+        const last = String(h).trim().split(/\s+/).pop();
+        if (eums.includes(last)) return h;
+        return h + " " + eums[0];
+      });
+      return [...new Set(parts)].join(" · ");
+    }
+    if (eums.length) return eums.join(" · ");
+    return "";
+  }
+
+  function lookupKorean(ch) {
+    if (!koReadings || !ch) return { hun: [], eum: [], label: "" };
+    const rec = charRecord(ch) || {};
+    const keys = [ch, rec.c, rec.t, ...(rec.v || [])].filter(Boolean);
+    for (const k of keys) {
+      const hit = koReadings[k];
+      if (!hit) continue;
+      const row = (typeof hit === "string") ? koReadings[hit] : hit;
+      if (!row) continue;
+      return { hun: row.h || [], eum: row.e || [], label: formatHunum(row) };
+    }
+    return { hun: [], eum: [], label: "" };
   }
 
   function charRecord(ch) {
@@ -240,7 +302,7 @@
     const gen = ++detailGen;
     const run = async () => {
       try {
-        await Promise.all([ensureChars(), ensureWords().catch(() => null)]);
+        await Promise.all([ensureChars(), ensureWords().catch(() => null), koreanWanted() ? ensureKoReadings().catch(() => null) : Promise.resolve()]);
       } catch (err) { console.warn(err); }
       if (gen !== detailGen) return;
       const info = lookupChar(ch);
@@ -257,6 +319,7 @@
           ${tradHtml}
         </div>
         <p class="dict-py">${esc(py)}</p>
+        ${koreanWanted() && lookupKorean(info.c).label ? `<p class="dict-ko-reading" lang="ko"><span class="dict-ko-label">Korean</span> ${esc(lookupKorean(info.c).label)}</p>` : ""}
         <section class="doc-panel-defs">
           <h3>English · CC-CEDICT</h3>
           ${meaning}
@@ -334,6 +397,9 @@
   window.dictionaryApp = {
     ensureChars,
     ensureWords,
+    ensureKoReadings,
+    lookupKorean,
+    charRecord,
     lookupChar,
     englishFor,
     search,
@@ -351,4 +417,5 @@
     allChars = Object.values(CHARS);
   }
   if (window.__WORDS__) buildWordIndex(window.__WORDS__);
+  if (window.__KOREAD__) koReadings = window.__KOREAD__.r || window.__KOREAD__;
 })();

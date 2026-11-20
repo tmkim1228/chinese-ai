@@ -631,7 +631,7 @@
     const fill = (meta) => {
       const sources = (meta && meta.sources) || [];
       el.innerHTML = `<ul>${sources.map((s) => `<li><strong>${esc(s.name)}</strong> — ${esc(s.license)}${s.url ? `<br/><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url)}</a>` : ""}${s.note ? "<br/>" + esc(s.note) : ""}</li>`).join("")}</ul>
-        <p>This English edition does not include HANZI DAILY card stories or Korean readings. Character readings and traditional forms are from Unicode Unihan. English glosses are from CC-CEDICT (CC BY-SA 4.0, MDBG).</p>`;
+        <p>This English edition does not include HANZI DAILY card stories. Character readings and traditional forms are from Unicode Unihan. English glosses are from CC-CEDICT (CC BY-SA 4.0, MDBG). An optional Korean reading (off by default) uses Unihan kHangul for 음 (Unicode Terms of Use) and the Korean edition's 훈음 data (libhangul hanja.txt, BSD-3-Clause) for 훈.</p>`;
     };
     if (window.__META__) fill(window.__META__);
     else fetch("data/meta.json").then((r) => r.json()).then(fill).catch(() => fill(null));

@@ -676,3 +676,66 @@ button.han-tap:hover, button.han-tap:focus { background: #eef4ff; color: var(--b
 
 
 #ask-input { min-height: 6rem; }
+
+.ask-source-body.is-annotated {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  column-gap: 0.15rem;
+  row-gap: 0.35rem;
+  line-height: 1.15;
+}
+button.han-tap.han-annotated {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  vertical-align: bottom;
+  min-width: 2.4em;
+  margin: 0;
+  padding: 0.15em 0.12em 0.2em;
+  line-height: 1.1;
+  background: transparent;
+}
+button.han-tap.han-annotated:hover,
+button.han-tap.han-annotated:focus { background: #eef4ff; }
+.han-tap .han-glyph {
+  font-family: var(--han);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+}
+.han-tap .han-py,
+.han-tap .han-ko {
+  font-family: var(--font);
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  max-width: 5.6rem;
+  overflow-wrap: anywhere;
+}
+.han-tap .han-py { color: var(--brand); }
+.han-tap .han-ko { color: var(--muted); }
+.han-tap .han-py-empty,
+.han-tap .han-ko-empty { min-height: 0; }
+.dict-ko-reading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0.15rem 0 0.6rem;
+}
+.dict-ko-reading .dict-ko-label {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.pref-sub { margin-left: 1.35rem; opacity: 1; }
+.pref-sub input:disabled + span { opacity: 0.55; }
+.reading-settings-page .hint { margin-top: 0.35rem; }

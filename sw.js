@@ -1,4 +1,4 @@
-const CACHE = "chinese-ai-en-v1.0-20261120";
+const CACHE = "chinese-ai-en-v1.1-20261120";
 const FILES = [
   "./",
   "./index.html",
@@ -11,6 +11,7 @@ const FILES = [
   "./manifest.webmanifest",
   "./data/meta.json",
   "./data/dictionary.json",
+  "./data/ko-readings.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/maskable-192.png",

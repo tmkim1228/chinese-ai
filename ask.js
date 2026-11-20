@@ -60,6 +60,23 @@
 
   function buildAiPrompt() {
     const src = (input.value || "").trim();
+    if (koreanInAiActive()) {
+      return [
+        "Explain the following Chinese text.",
+        "",
+        "Source:",
+        src || "(empty)",
+        "",
+        "1. Full translation: Translate the whole text into natural English.",
+        "2. Context: In a short note, say how or where this wording is typically used, when that is relevant.",
+        "3. Word by word: List each word on its own line in this format: hanzi, pinyin with tone marks, Korean 훈음 (hun + eum), then the English meaning. Add a short note for idioms or measure words.",
+        "   Example: 水 shuǐ 물 수: water",
+        "   Example: 快速 kuàisù 빠를 쾌 + 빠를 속: fast, quick",
+        "   If you are not sure of the 훈음, omit it rather than guessing.",
+        "",
+        "Write the prose in English. Include Korean 훈음 only in the word-by-word lines, after the pinyin.",
+      ].join("\n");
+    }
     return [
       "Explain the following Chinese text.",
       "",
@@ -76,7 +93,38 @@
   }
 
   const AI_STORAGE_KEY = "chinese-ai-en.ai.v1";
+  const PREFS_KEY = "chinese-ai-en.prefs.v1";
   const AI_SYSTEM = "You are a precise assistant that explains Chinese text in English. Follow the requested format exactly. Write only in English. Do not use Korean.";
+  const AI_SYSTEM_KO = "You are a precise assistant that explains Chinese text in English. Follow the requested format exactly. Write the prose in English. In the word-by-word list only, you may add Korean 훈음 (hun + eum) after the pinyin. Do not write other Korean prose.";
+
+  function loadPrefs() {
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      return {
+        koreanReading: !!parsed.koreanReading,
+        koreanInAi: !!parsed.koreanInAi,
+      };
+    } catch (err) {
+      return { koreanReading: false, koreanInAi: false };
+    }
+  }
+
+  function savePrefs(next) {
+    const cur = Object.assign(loadPrefs(), next || {});
+    const rec = { koreanReading: !!cur.koreanReading, koreanInAi: !!cur.koreanInAi };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(rec));
+    return rec;
+  }
+
+  function koreanInAiActive() {
+    const p = loadPrefs();
+    return !!(p.koreanReading && p.koreanInAi);
+  }
+
+  function getAiSystem() {
+    return koreanInAiActive() ? AI_SYSTEM_KO : AI_SYSTEM;
+  }
   let AI_TIMEOUT_MS = 180000;
   let AI_NONSTREAM_TIMEOUT_MS = 180000;
   const AI_ASK_MAX_TOKENS = 1600;
@@ -281,8 +329,33 @@
     return next;
   }
 
+
+  function syncReadingToggles() {
+    const p = loadPrefs();
+    const ko = $("#pref-korean-reading");
+    const ai = $("#pref-korean-in-ai");
+    if (ko) ko.checked = !!p.koreanReading;
+    if (ai) {
+      ai.checked = !!(p.koreanReading && p.koreanInAi);
+      ai.disabled = !p.koreanReading;
+    }
+  }
+
+  function onReadingToggleChange() {
+    const ko = $("#pref-korean-reading");
+    const ai = $("#pref-korean-in-ai");
+    const rec = savePrefs({
+      koreanReading: !!(ko && ko.checked),
+      koreanInAi: !!(ko && ko.checked && ai && ai.checked),
+    });
+    syncReadingToggles();
+    renderSourceText();
+    return rec;
+  }
+
   function fillSettingsForm(reason) {
     const s = loadAiSettings();
+    syncReadingToggles();
     if ($("#ai-provider")) $("#ai-provider").value = s.provider;
     fillModelOptions(s.provider, s.model);
     if ($("#ai-key")) {
@@ -703,7 +776,7 @@
       const generationConfig = { temperature: 0.3 };
       if (maxTokens) generationConfig.maxOutputTokens = maxTokens;
       payloadObj = {
-        systemInstruction: { parts: [{ text: AI_SYSTEM }] },
+        systemInstruction: { parts: [{ text: getAiSystem() }] },
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig,
       };
@@ -716,7 +789,7 @@
       payloadObj = {
         model,
         messages: [
-          { role: "system", content: AI_SYSTEM },
+          { role: "system", content: getAiSystem() },
           { role: "user", content: prompt },
         ],
         temperature: 0.3,
@@ -942,13 +1015,33 @@
       || (cp >= 0x20000 && cp <= 0x2FA1F);
   }
 
-  function wrapHanziHtml(text) {
+  function pinyinFor(ch) {
+    const D = window.dictionaryApp;
+    if (!D || !D.lookupKorean && !D.ensureChars) return "";
+    const rec = (typeof D.charRecord === "function") ? D.charRecord(ch) : null;
+    // fallback via lookupChar if exported — otherwise dictionary records
+    if (rec && rec.p && rec.p.length) return rec.p[0];
+    return "";
+  }
+
+  function wrapHanziHtml(text, annotated) {
     let out = "", buf = "";
     const flush = () => { if (buf) { out += esc(buf); buf = ""; } };
+    const D = window.dictionaryApp;
     for (const ch of String(text || "")) {
       if (isHan(ch)) {
         flush();
-        out += `<button type="button" class="han-tap" data-han="${esc(ch)}" lang="zh-CN">${esc(ch)}</button>`;
+        if (annotated) {
+          const py = pinyinFor(ch);
+          const ko = (D && D.lookupKorean) ? (D.lookupKorean(ch).label || "") : "";
+          out += `<button type="button" class="han-tap han-annotated" data-han="${esc(ch)}" lang="zh-CN">`
+            + `<span class="han-glyph">${esc(ch)}</span>`
+            + (py ? `<span class="han-py">${esc(py)}</span>` : `<span class="han-py han-py-empty"></span>`)
+            + (ko ? `<span class="han-ko" lang="ko">${esc(ko)}</span>` : `<span class="han-ko han-ko-empty"></span>`)
+            + `</button>`;
+        } else {
+          out += `<button type="button" class="han-tap" data-han="${esc(ch)}" lang="zh-CN">${esc(ch)}</button>`;
+        }
       } else buf += ch;
     }
     flush();
@@ -973,14 +1066,24 @@
     }
   }
 
-  function renderSourceText() {
+  async function renderSourceText() {
     const box = $("#ask-source");
     const body = $("#ask-source-body");
     const text = (input.value || "").trim();
     if (!box || !body) return;
     if (!text) { box.hidden = true; body.innerHTML = ""; return; }
     box.hidden = false;
-    body.innerHTML = wrapHanziHtml(text);
+    const wantKo = !!(loadPrefs().koreanReading);
+    if (wantKo && window.dictionaryApp) {
+      try {
+        await Promise.all([
+          window.dictionaryApp.ensureChars ? window.dictionaryApp.ensureChars() : Promise.resolve(),
+          window.dictionaryApp.ensureKoReadings ? window.dictionaryApp.ensureKoReadings() : Promise.resolve(),
+        ]);
+      } catch (err) { console.warn("readings", err); }
+    }
+    body.innerHTML = wrapHanziHtml(text, wantKo);
+    body.classList.toggle("is-annotated", wantKo);
   }
 
   const WORD_LINE = /^([\u3400-\u9FFF\uF900-\uFAFF]{1,20})\s+([A-Za-zāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüÜvV0-9:'\-\s]+?)\s*[:：]\s*(.+)$/;
@@ -1156,13 +1259,22 @@
     }
   });
 
+  $("#pref-korean-reading")?.addEventListener("change", onReadingToggleChange);
+  $("#pref-korean-in-ai")?.addEventListener("change", onReadingToggleChange);
   fillSettingsForm();
+  syncReadingToggles();
+
 
   window.askApp = {
     buildAiPrompt,
     loadAiSettings,
     persistAiSettings,
+    loadPrefs,
+    savePrefs,
+    PREFS_KEY,
+    getAiSystem,
     askAi,
+    renderSourceText,
     hideAiResult,
     renderAiAnswer,
     enhanceAnswer,

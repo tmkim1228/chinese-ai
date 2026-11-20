@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#1b3a5a" />
   <meta name="description" content="Paste Chinese text and ask AI for a translation, context, and a word-by-word breakdown. Review with spaced repetition. Works offline except for Ask AI." />
-  <title>Chinese with AI v1.0</title>
+  <title>Chinese with AI v1.1</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -15,7 +15,7 @@
     <div class="brand">
       <span class="logo">中</span>
       <div>
-        <h1>Chinese with AI <small>v1.0</small></h1>
+        <h1>Chinese with AI <small>v1.1</small></h1>
         <p class="sub">Paste Chinese text · Ask AI · Review offline</p>
       </div>
     </div>
@@ -45,7 +45,7 @@
     <section id="ask-source" class="panel ask-source" hidden>
       <h2 class="ask-source-title">Text</h2>
       <p id="ask-source-body" class="ask-source-body" lang="zh-CN"></p>
-      <p class="hint">Tap any Chinese character for pinyin, the traditional form, and English meanings (offline).</p>
+      <p class="hint">Tap any Chinese character for pinyin, the traditional form, and English meanings (offline). Turn on Korean reading in Settings to also see pinyin and 훈음 under each character.</p>
     </section>
 
     <section id="ask-result" class="panel doc-ai-result" hidden>
@@ -170,6 +170,20 @@
         <button type="button" id="ai-settings-clear" class="danger">Delete key</button>
       </div>
       <p id="ai-settings-status" class="hint" aria-live="polite"></p>
+    </section>
+
+    <section class="panel reading-settings-page">
+      <h2>Readings</h2>
+      <label class="ai-stream-label" for="pref-korean-reading">
+        <input type="checkbox" id="pref-korean-reading" />
+        <span>Korean reading</span>
+      </label>
+      <p class="hint">When this is on, the Text analysis under Ask AI shows pinyin and Korean 훈음 (for example shuǐ / 물 수) under each character. It is off by default so the English edition stays English-only. 음 comes from Unicode Unihan (kHangul). 훈 comes from the 훈음 data already used in the Korean edition (libhangul hanja.txt, BSD-3-Clause).</p>
+      <label class="ai-stream-label pref-sub" for="pref-korean-in-ai">
+        <input type="checkbox" id="pref-korean-in-ai" disabled />
+        <span>Add Korean readings to AI answers</span>
+      </label>
+      <p class="hint">When this is also on, the Ask AI prompt asks the model to add pinyin and Korean 훈음 after each hanzi in the word-by-word list. It stays off until you turn it on.</p>
     </section>
     <section class="panel start-guide">
       <h2>What this app does</h2>

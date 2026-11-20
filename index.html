@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1b3a5a" />
+  <meta name="description" content="Paste Chinese text and ask AI for a translation, context, and a word-by-word breakdown. Review with spaced repetition. Works offline except for Ask AI." />
+  <title>Chinese with AI v1.0</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Chinese AI"><meta name="mobile-web-app-capable" content="yes"></head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo">中</span>
+      <div>
+        <h1>Chinese with AI <small>v1.0</small></h1>
+        <p class="sub">Paste Chinese text · Ask AI · Review offline</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="btn-install" class="ghost install-btn">Install app</button>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="ask" role="tab" aria-selected="true">Ask AI</button>
+      <button type="button" class="tab" data-tab="dict" role="tab" aria-selected="false">Dictionary</button>
+      <button type="button" class="tab" data-tab="review" role="tab" aria-selected="false">Review <span id="hist-count" class="count">0</span></button>
+      <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
+    </nav>
+  </header>
+
+  <main id="view-ask" class="view">
+    <section class="panel ask-panel">
+      <label class="lbl" for="ask-input">Paste Chinese text (a name, sentence, or document excerpt)</label>
+      <textarea id="ask-input" rows="5" spellcheck="false" placeholder="Example: 本公司将于下周召开董事会会议，讨论银行贷款和会计报表。"></textarea>
+      <div class="doc-toolbar ask-toolbar">
+        <button type="button" id="ask-btn" class="primary">Ask AI</button>
+        <button type="button" id="ask-copy" class="ghost">Copy prompt</button>
+        <button type="button" id="ask-clear" class="ghost">Clear</button>
+      </div>
+      <p class="hint">Your API key stays on this device. The text is sent only to the provider you choose, and only when you press Ask AI. Usage is billed by that provider.</p>
+    </section>
+
+    <section id="ask-source" class="panel ask-source" hidden>
+      <h2 class="ask-source-title">Text</h2>
+      <p id="ask-source-body" class="ask-source-body" lang="zh-CN"></p>
+      <p class="hint">Tap any Chinese character for pinyin, the traditional form, and English meanings (offline).</p>
+    </section>
+
+    <section id="ask-result" class="panel doc-ai-result" hidden>
+      <div class="doc-ai-head">
+        <h2>AI explanation</h2>
+        <div class="doc-ai-actions">
+          <button type="button" id="ask-cancel" class="ghost" hidden>Cancel</button>
+          <button type="button" id="ask-copy-answer" class="ghost">Copy answer</button>
+          <button type="button" id="ask-retry" class="ghost">Ask again</button>
+          <button type="button" id="ask-fast-retry" class="primary" hidden>Ask again with fast model</button>
+        </div>
+      </div>
+      <p id="ask-status" class="doc-ai-status" hidden></p>
+      <p id="ask-error" class="doc-ai-error" hidden></p>
+      <div id="ask-answer" class="doc-ai-answer"></div>
+    </section>
+  </main>
+
+  <main id="view-dict" class="view" hidden>
+    <section class="panel">
+      <label class="lbl" for="dict-input">Search by character, pinyin, or English</label>
+      <div class="search-row">
+        <input id="dict-input" type="search" autocomplete="off" spellcheck="false"
+          placeholder="Example: 辉 / hui / radiance" />
+        <button type="button" id="dict-search-btn" class="primary">Search</button>
+      </div>
+      <p class="hint" id="dict-hint">Type Chinese characters, pinyin (with or without tones), or an English word. The word list is CC-CEDICT and works offline after the first download.</p>
+    </section>
+    <section id="dict-status" class="status" hidden></section>
+    <section id="dict-results" class="dict-grid"></section>
+  </main>
+
+  <main id="view-review" class="view" hidden>
+    <section id="srs-stats" class="panel srs-stats">
+      <details id="srs-stats-details" open>
+        <summary>Progress</summary>
+        <div class="srs-stats-body">
+          <div class="srs-kpis">
+            <div class="srs-kpi"><span class="srs-kpi-n" id="srs-streak">0</span><span class="srs-kpi-l">Day streak</span></div>
+            <div class="srs-kpi"><span class="srs-kpi-n" id="srs-saved">0</span><span class="srs-kpi-l">Saved items</span></div>
+            <div class="srs-kpi"><span class="srs-kpi-n" id="srs-learned">0</span><span class="srs-kpi-l">Learned (box 3+)</span></div>
+            <div class="srs-kpi"><span class="srs-kpi-n" id="srs-mastered">0</span><span class="srs-kpi-l">Mastered (box 5+)</span></div>
+          </div>
+          <div class="srs-chart-head">
+            <div class="srs-range" role="group" aria-label="Range">
+              <button type="button" class="chip active" id="srs-range-14" data-range="14">14 days</button>
+              <button type="button" class="chip" id="srs-range-30" data-range="30">30 days</button>
+            </div>
+            <label class="srs-goal-label">Daily goal
+              <input id="srs-goal" type="number" min="1" max="200" value="20" />
+            </label>
+          </div>
+          <div id="srs-chart" class="srs-chart" aria-label="Reviews per day"></div>
+          <p class="hint srs-legend">Grid colors:
+            <span class="srs-swatch lv-new">N New</span>
+            <span class="srs-swatch lv-learning">L Learning</span>
+            <span class="srs-swatch lv-learned">D Learned</span>
+            <span class="srs-swatch lv-mastered">M Mastered</span>
+          </p>
+          <div id="srs-grid" class="srs-grid" aria-label="Saved item progress"></div>
+        </div>
+      </details>
+    </section>
+    <section id="review-today" class="panel review-today">
+      <p id="review-due-line" class="review-due-line">Cards due today: <strong id="review-due-count">0</strong></p>
+      <div class="toolbar-actions">
+        <button type="button" id="btn-review-today" class="primary">Review today</button>
+        <button type="button" id="btn-quiz" class="ghost">Quiz</button>
+      </div>
+    </section>
+    <section id="backup-banner" class="panel backup-banner" hidden>
+      <p>Your review list is stored only in this browser. Export a JSON backup so you do not lose it.</p>
+      <div class="toolbar-actions">
+        <button type="button" id="backup-export" class="primary">Export now</button>
+        <button type="button" id="backup-dismiss" class="ghost">Later</button>
+      </div>
+    </section>
+    <section class="panel review-toolbar">
+      <input id="review-search" type="search" placeholder="Search hanzi, pinyin, or English" />
+      <div class="toolbar-actions">
+        <button type="button" id="btn-flash" class="ghost">All cards</button>
+        <button type="button" id="btn-export" class="ghost">Export</button>
+        <button type="button" id="btn-import" class="ghost">Import</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden />
+      </div>
+    </section>
+    <section id="review-list" class="review-list"></section>
+    <section id="review-empty" class="empty-box">Nothing saved yet. Add words from an Ask AI answer or from the dictionary popup.</section>
+  </main>
+
+  <main id="view-settings" class="view" hidden>
+    <section class="panel ai-settings-page">
+      <h2>AI settings</h2>
+      <p id="ai-settings-reason" class="ai-settings-reason" hidden>Save an API key to see answers in the app. The key stays on this device.</p>
+      <label for="ai-provider">Provider</label>
+      <select id="ai-provider">
+        <option value="xai">xAI Grok</option>
+        <option value="openai">OpenAI</option>
+        <option value="gemini">Google Gemini</option>
+      </select>
+      <label for="ai-model">Model</label>
+      <select id="ai-model"></select>
+      <p class="hint" id="ai-model-hint">xAI defaults to grok-4.7 (reasoning effort: low). If answers are slow, choose grok-4.3 (fast model, reasoning none).</p>
+      <label for="ai-key">API key</label>
+      <div class="ai-key-row">
+        <input id="ai-key" type="password" spellcheck="false" autocomplete="off" placeholder="Stored only on this device" />
+        <button type="button" id="ai-key-toggle" class="ghost">Show</button>
+      </div>
+      <p class="hint ai-privacy-note">The key is stored only on this device. When you press Ask AI, the text in the box is sent to the provider you selected, and that provider may charge for usage.</p>
+      <label class="ai-stream-label" for="ai-use-stream">
+        <input type="checkbox" id="ai-use-stream" checked />
+        <span>Use streaming (the answer appears gradually)</span>
+      </label>
+      <p class="hint">Get a key:
+        <a href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">xAI (console.x.ai)</a> ·
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI</a> ·
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google Gemini</a>
+      </p>
+      <div class="toolbar-actions ai-settings-actions">
+        <button type="button" id="ai-settings-save" class="primary">Save</button>
+        <button type="button" id="ai-settings-test" class="ghost">Test connection</button>
+        <button type="button" id="ai-settings-clear" class="danger">Delete key</button>
+      </div>
+      <p id="ai-settings-status" class="hint" aria-live="polite"></p>
+    </section>
+    <section class="panel start-guide">
+      <h2>What this app does</h2>
+      <ul>
+        <li><strong>Ask AI</strong> — Paste Chinese text and get a full English translation, a short usage note, and a word-by-word list.</li>
+        <li><strong>Dictionary</strong> — Look up characters and words offline (pinyin and English from CC-CEDICT).</li>
+        <li><strong>Review</strong> — Save words and review them with spaced repetition, quizzes, and a progress chart. The list stays in this browser; export a JSON backup.</li>
+      </ul>
+    </section>
+  </main>
+
+  <div id="dict-overlay" class="dict-overlay" hidden>
+    <div class="dict-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="dict-heading">
+        <h2 id="detail-title">Character</h2>
+        <button type="button" class="ghost" id="detail-close">Close</button>
+      </div>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+  <div id="flash-modal" class="modal" hidden>
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>Flashcards</h2>
+        <button type="button" id="flash-close" class="icon-x" aria-label="Close">×</button>
+      </header>
+      <div class="flash-mode">
+        <button type="button" class="chip active" data-mode="py2han">Pinyin → hanzi</button>
+        <button type="button" class="chip" data-mode="han2py">Hanzi → pinyin</button>
+        <button type="button" class="chip" data-mode="han2en">Hanzi → English</button>
+      </div>
+      <div id="flash-progress" class="flash-progress"></div>
+      <button type="button" id="flash-card" class="flash-card">
+        <div id="flash-front" class="flash-front"></div>
+        <div id="flash-back" class="flash-back" hidden></div>
+        <p class="flash-tap">Tap to flip</p>
+      </button>
+      <div class="flash-actions">
+        <button type="button" id="flash-unknown" class="danger">Don't know</button>
+        <button type="button" id="flash-unsure" class="ghost">Unsure</button>
+        <button type="button" id="flash-known" class="ok">Know</button>
+      </div>
+      <button type="button" id="flash-speak" class="ghost flash-speak">Play audio</button>
+    </div>
+  </div>
+
+  <div id="quiz-modal" class="modal" hidden>
+    <div class="modal-card quiz-card">
+      <header class="modal-head">
+        <h2 id="quiz-title">Quiz</h2>
+        <button type="button" id="quiz-close" class="icon-x" aria-label="Close">×</button>
+      </header>
+      <div class="flash-mode quiz-mode">
+        <button type="button" class="chip active" data-qmode="mcq">4-choice English</button>
+        <button type="button" class="chip" data-qmode="pinyin">Type the pinyin</button>
+      </div>
+      <div id="quiz-progress" class="flash-progress"></div>
+      <div id="quiz-body" class="quiz-body">
+        <div id="quiz-prompt" class="quiz-prompt"></div>
+        <div id="quiz-choices" class="quiz-choices" hidden></div>
+        <form id="quiz-pinyin-form" class="quiz-pinyin-form" hidden>
+          <label class="lbl" for="quiz-pinyin-input">Pinyin</label>
+          <input id="quiz-pinyin-input" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="Tone marks, numbers, or v for ü" />
+          <button type="submit" id="quiz-pinyin-submit" class="primary">Check</button>
+        </form>
+        <p id="quiz-feedback" class="quiz-feedback" hidden></p>
+        <p id="quiz-example" class="quiz-example" hidden></p>
+        <button type="button" id="quiz-next" class="primary" hidden>Next</button>
+      </div>
+      <div id="quiz-summary" class="quiz-summary" hidden>
+        <p id="quiz-score" class="quiz-score"></p>
+        <div class="toolbar-actions">
+          <button type="button" id="quiz-retry-wrong" class="primary">Retry missed items</button>
+          <button type="button" id="quiz-close-done" class="ghost">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="srs-detail-modal" class="modal" hidden>
+    <div class="modal-card">
+      <header class="modal-head">
+        <h2>Item</h2>
+        <button type="button" id="srs-detail-close" class="icon-x" aria-label="Close">×</button>
+      </header>
+      <div id="srs-detail-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="doc-toast" hidden></div>
+
+  <footer class="foot">
+    <details>
+      <summary>Data and licenses</summary>
+      <div id="credits"></div>
+    </details>
+  </footer>
+  <script src="srs.js"></script>
+  <script src="app.js"></script>
+  <script src="dictionary.js"></script>
+  <script src="ask.js"></script>
+<script src="pwa.js"></script></body>
+</html>

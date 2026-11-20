@@ -1,0 +1,39 @@
+{
+  "id": "./",
+  "name": "Chinese with AI v1.0",
+  "short_name": "Chinese AI",
+  "description": "Paste Chinese text, ask AI for a translation and a word-by-word breakdown, and review with spaced repetition.",
+  "lang": "en",
+  "start_url": ".",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1b3a5a",
+  "theme_color": "#1b3a5a",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

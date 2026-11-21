@@ -1,4 +1,4 @@
-const CACHE = "chinese-ai-en-v1.1-20261120";
+const CACHE = "chinese-ai-en-v1.2-20261121";
 const FILES = [
   "./",
   "./index.html",
@@ -12,11 +12,11 @@ const FILES = [
   "./data/meta.json",
   "./data/dictionary.json",
   "./data/ko-readings.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/maskable-192.png",
-  "./icons/maskable-512.png",
-  "./icons/apple-touch-icon.png"
+  "./icons/icon-192.png?v=1.2",
+  "./icons/icon-512.png?v=1.2",
+  "./icons/maskable-192.png?v=1.2",
+  "./icons/maskable-512.png?v=1.2",
+  "./icons/apple-touch-icon.png?v=1.2"
 ];
 // words.json / words.json.gz are runtime-cached on first fetch (Dictionary tab, character popup, or idle prefetch).
 

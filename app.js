@@ -219,18 +219,18 @@
       const bh = s.count ? Math.max(2, Math.round((s.count / max) * plotH)) : 0;
       const x = padL + i * bw + 2;
       const y = padT + plotH - bh;
-      const track = `<rect x="${x}" y="${padT}" width="${Math.max(1, bw - 4)}" height="${plotH}" fill="#eef2f7" rx="3"></rect>`;
-      const color = s.count >= goal ? "#1b7a4a" : "#3d6ea8";
+      const track = `<rect x="${x}" y="${padT}" width="${Math.max(1, bw - 4)}" height="${plotH}" fill="#e7f0ed" rx="3"></rect>`;
+      const color = s.count >= goal ? "#1b7a4a" : "#0F766E";
       const bar = bh ? `<rect x="${x}" y="${y}" width="${Math.max(1, bw - 4)}" height="${bh}" fill="${color}" rx="3"></rect>` : "";
       return track + bar;
     }).join("");
     const goalY = padT + plotH - Math.round((goal / max) * plotH);
     const dash = `<line x1="${padL}" y1="${goalY}" x2="${w - padR}" y2="${goalY}" stroke="#c0392b" stroke-dasharray="4 4" stroke-width="1.5"></line>`;
     const goalLbl = `<text x="${w - 4}" y="${goalY + 4}" font-size="11" fill="#c0392b" text-anchor="end">goal</text>`;
-    const axis = `<line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="#d5deea" stroke-width="1"></line>`;
+    const axis = `<line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="#c9ddd8" stroke-width="1"></line>`;
     const first = series[0] && series[0].date ? String(series[0].date).slice(5) : "";
     const last = series.length && series[series.length - 1].date ? String(series[series.length - 1].date).slice(5) : "";
-    const labels = `<text x="${padL}" y="${h - 8}" font-size="11" fill="#5b6b80">${first}</text><text x="${w - padR}" y="${h - 8}" font-size="11" fill="#5b6b80" text-anchor="end">${last}</text>`;
+    const labels = `<text x="${padL}" y="${h - 8}" font-size="11" fill="#4e655f">${first}</text><text x="${w - padR}" y="${h - 8}" font-size="11" fill="#4e655f" text-anchor="end">${last}</text>`;
     return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Reviews completed per day. Dashed line is the daily goal.">${axis}${bars}${dash}${goalLbl}${labels}</svg>`;
   }
 
@@ -607,18 +607,32 @@
 
   // PWA install
   let deferredPrompt = null;
+  const isStandalone = () =>
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  const installBtn = $("#btn-install");
+  const hideInstallBtn = () => { if (installBtn) installBtn.hidden = true; };
+  const showInstallBtn = () => { if (installBtn && !isStandalone()) installBtn.hidden = false; };
+  if (isStandalone()) hideInstallBtn();
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    const btn = $("#btn-install");
-    if (btn) btn.hidden = false;
+    showInstallBtn();
   });
-  $("#btn-install")?.addEventListener("click", async () => {
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    hideInstallBtn();
+  });
+  installBtn?.addEventListener("click", async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
+      try { await deferredPrompt.userChoice; } catch (_) {}
       deferredPrompt = null;
     } else {
-      alert("In the browser menu, choose Install app or Add to Home screen.");
+      alert(
+        "To install this app, use the install icon on the right side of Chrome’s address bar, or open the browser menu (⋮) → Cast, save, and share → Install page as app.\n\n" +
+        "If an older version is already installed, Chrome will not show the install prompt. Remove it first at chrome://apps (right-click the old icon → Remove from Chrome), then refresh this page and install again."
+      );
     }
   });
   if ("serviceWorker" in navigator) {
